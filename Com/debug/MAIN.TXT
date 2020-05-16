@@ -1,0 +1,5 @@
+Turbo C  Version 1.5  Copyright (c) 1987 Borland International
+main.cpp:
+Turbo Link  Version 1.1  Copyright (c) 1987 Borland International
+
+	Available memory 428764

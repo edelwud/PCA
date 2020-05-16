@@ -1,0 +1,62 @@
+# INCOMING
+FILENAMES=MAIN PROVIDER
+
+WORK_FOLDER=D:\Dev\TurboC
+MAKEFILE_PATH=$(abspath $(lastword $(MAKEFILE_LIST)))
+CURRENT_FOLDER=$(patsubst %/,%,$(dir $(MAKEFILE_PATH)))
+DIST_FOLDER=dist
+DATA_FOLDER=data
+DEBUG_FOLDER=debug
+
+INPUT_FILE=$(DATA_FOLDER)/INPUT.TXT
+OUTPUT_FILE=$(DATA_FOLDER)/OUTPUT.TXT
+STARTUP_FILE=$(DATA_FOLDER)/STARTUP.TXT
+
+COMPILE_LOG_FILE=$(DEBUG_FOLDER)/COMPILE
+LINK_LOG_FILE=$(DEBUG_FOLDER)/LINK
+
+DISK_COMPILATOR_NAME=C
+DISK_EXECUTABLE_NAME=D
+CMD_INTERFACE=-c
+
+# PARSING FILES
+ASSEMBLY = $(foreach filename,$(FILENAMES),$(filename).CPP)
+OBJECTS = $(foreach filename,$(FILENAMES),$(filename).OBJ)
+EXECUTABLE = $(foreach filename,$(FILENAMES),$(filename).EXE)
+
+# CMD INTERFACE
+CMD = $(CMD_INTERFACE) $(1) 
+
+MOVE_CMD = $(call CMD,"copy $(1) $(2)") \
+$(call CMD, "del $(1)")
+
+CONNECT_COM_PORT = $(call CMD, "serial$(1) = directserial realport:COM$(2)")
+
+LAUNCH = dosbox \
+	$(call CMD,"mount $(DISK_COMPILATOR_NAME) $(WORK_FOLDER)") \
+	$(call CMD,"mount $(DISK_EXECUTABLE_NAME) $(CURRENT_FOLDER)") \
+
+COMPILE = $(call LAUNCH) \
+	$(call CMD,"PATH=$(DISK_COMPILATOR_NAME):\BIN;$(DISK_COMPILATOR_NAME):\INCLUDE") \
+	$(call CMD,"$(DISK_EXECUTABLE_NAME):") \
+	$(foreach filename,$(1),$(call CMD,"TCC.EXE -L$(DISK_COMPILATOR_NAME):\LIB -I$(DISK_COMPILATOR_NAME):\INCLUDE $(filename).cpp > debug\$(filename).TXT")) \
+	$(call CMD,"exit")
+
+all: build
+build:
+	$(call COMPILE,$(FILENAMES))
+main:
+	$(call LAUNCH) \
+	$(call CMD,"PATH=$(DISK_COMPILATOR_NAME):\BIN;$(DISK_COMPILATOR_NAME):\INCLUDE") \
+	$(call CMD,"$(DISK_EXECUTABLE_NAME):") \
+	$(call CMD,"TCC.EXE -L$(DISK_COMPILATOR_NAME):\LIB -I$(DISK_COMPILATOR_NAME):\INCLUDE -C main.cpp > debug\MAIN.TXT") \
+	$(call CMD,"cls") \
+	$(call CONNECT_COM_PORT,2,2)
+dataprovider:
+	$(call LAUNCH) \
+	$(call CMD,"PATH=$(DISK_COMPILATOR_NAME):\BIN;$(DISK_COMPILATOR_NAME):\INCLUDE") \
+	$(call CMD,"$(DISK_EXECUTABLE_NAME):") \
+	$(call CMD,"TCC.EXE -L$(DISK_COMPILATOR_NAME):\LIB -I$(DISK_COMPILATOR_NAME):\INCLUDE -C provider.cpp > debug\PROVIDER.TXT") \
+	$(call CMD,"$(DISK_EXECUTABLE_NAME):") \
+	$(call CMD,"cls") \
+	$(call CONNECT_COM_PORT,1,1)
